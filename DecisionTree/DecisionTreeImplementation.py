@@ -45,6 +45,8 @@ def split(d, split_variable, split_value):
     #TODO: Abhi - I was not able to do the datatype thing to
     #TODO: distinguish between continous of categorical.
     #TODO: I commented it out and we can improve it for next versions
+    # Remark - It is not possible to distinguish between categorical feature and continous feature, because categories can
+    # be [1,2,3,4,5]. One need's to do one-hot encoding of categorical feature as a pre-processing step in data.
 
     # For Categorical Column
     #if d[[split_variable]].dtypes == 'O':
@@ -78,7 +80,8 @@ def best_split(d):
         for spValue in possible_splits[spColumn]:
             # Split the data based on the value
             data_left, data_right = split(d, spColumn, spValue)
-            # TODO: when do we use entropy and when do we use gini?
+            # TODO: when do we use entropy and when do we use gini? - They are more or less same, on internet it is mentioned that gini is
+            # less computationally expensive than entropy. So maybe we can use gini, but not sure.
             proportion_left = data_left.shape[0] / (data_left.shape[0] + data_right.shape[0])
             proportion_right = data_right.shape[0] / (data_left.shape[0] + data_right.shape[0])
             ent = proportion_left * entropy(data_left) + proportion_right * entropy(data_right)
@@ -93,12 +96,40 @@ def best_split(d):
 
 # This is the main function of the decision tree algorithm
 # Prerequisites: data is a pandas dataframe with
-def decision_tree(d, count=0, min_samples=2, max_depth=5):
-    # If the data is pure?
-    if is_split_pure(d):
-        # TODO: review if this code is correct after implementing the recursive function
-        classes, class_counts = np.unique(d[:, -1], return_counts=True)
-        return classes[class_counts.argmax()]
+def decision_tree(d, count=0, min_samples=None, max_depth=None, ml_task):
+
+    #Check for max_depth condition
+    if max_depth == None:
+        depth_cond == True
+    else:
+        if count < max_depth:
+            depth_cond == True
+        else:
+            depth_cond == False
+
+    # Check for min_samples condition
+    if min_samples == None:
+        sample_cond == True
+    else:
+        if d.shape[0] < min_samples:
+            sample_cond == True
+        else:
+            sample_cond == False
+
+
+
+    # If the data is pure? or max depth / min sample condition reached
+    if is_split_pure(d) or not(depth_cond) or not(sample_cond):
+        # TODO: review if this code is correct after implementing the recursive function - It should work
+        # Prediction from leaf node in case of classification
+        if ml_task.lower() == "classification":
+            classes, class_counts = np.unique(d[:, -1], return_counts=True)
+            prediction = classes[class_counts.argmax()]
+        # Prediction from leaf node in case of regression
+        else:
+            prediction = np.mean(d[:, -1])
+
+        return prediction
 
     else:
         count += 1
@@ -109,6 +140,8 @@ def decision_tree(d, count=0, min_samples=2, max_depth=5):
         print(best_value)
 
         # 2. Split the data
+
+        data_left, data_right = split(d, best_column, best_value)
 
 
 
