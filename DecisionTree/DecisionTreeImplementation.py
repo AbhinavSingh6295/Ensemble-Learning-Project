@@ -41,8 +41,9 @@ def gini_impurity(d):
 
 # Split the data into left and right branch
 def split(d, split_variable, split_value):
-    data_left = d[d[split_variable] <= split_value]
-    data_right = d[d[split_variable] > split_value]
+    # Updated, because previous method was not working in case column name are not indexes
+    data_left = d[d.iloc[:, split_variable] <= split_value]
+    data_right = d[d.iloc[:, split_variable] > split_value]
     return data_left, data_right
 
 
@@ -130,6 +131,32 @@ def decision_tree(d, ml_task, count=0, max_depth=None, min_samples=None):
         result_tree[condition].append(
             decision_tree(data_right, ml_task, count=count, max_depth=max_depth, min_samples=min_samples))
         return result_tree
+
+### Prediction on test  ######
+# For prediction on one example
+def predict(row, tree):
+    condition = list(tree.keys())[0] # Node with condition for split
+    feature_index, operator, value = condition.split(" ")
+
+    # Example in left node
+    if row[int(feature_index)] <= float(value):
+        # Use function recursively in case it's not a leaf node
+        if isintance(tree[condition][0], dict):
+            return predict(row, tree[condition][0])
+        # Else return the value of node
+        else:
+            return tree[condition][0]
+
+    # Example in right node
+    else:
+        if isinstance(tree[condition][1], dict):
+            return predict(row, tree[condition][1])
+        else:
+            return tree[condition][1]
+
+# For prediction of data in dataframe (df) #TODO: can come-up with better way to do this
+predictions = df.apply(predict, args=(tree, ), axis=1)
+
 
 
 # -------------------------------------
