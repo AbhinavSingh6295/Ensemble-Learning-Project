@@ -11,12 +11,19 @@ import pandas as pd
 
 # Auxiliary functions
 # Preprocesses the data
-def preprocess_data(d):
+def preprocess_data(d, cat_cols = None):
     # If the data is a numpy_array, convert to pandas dataframe
     if type(d).__module__ == np.__name__:
         d = pd.DataFrame(data=d)
+
     # TODO: would this be a good place to convert to dummies?
-    # TODO: also I was thinking on naming the columns standard way [0, 1, ..., n]
+    # cat_cols = input list of categorical columns in data
+    if cat_cols != None:
+        d = pd.get_dummies(d, columns=cat_cols)
+
+    # TODO: also I was thinking on naming the columns standard way [0, 1, ..., n] - We can do that becuase we don't keep the names in the decision tree process anyways
+    d.columns = range(d.shape[1])
+
     return d
 
 
@@ -56,6 +63,7 @@ def split(d, split_variable, split_value):
 
 
 # Finding all possible splits in data and choosing the one with the lowest entropy
+# TODO - Should we give the hyperparameter to choose if we want to use gini or entropy for impurity calculation.
 def best_split(d):
     possible_splits = {}
     for column_index in range(d.shape[1] - 1):
@@ -164,6 +172,7 @@ class DecisionTree:
         # It applies the same preprocessing steps for the prediction data
         test_data = preprocess_data(d)
 
+        # TODO - Don't know if we need this condition becuase the test data can contain the label column as well, which can helps in calculating the accuracy.
         # If (test_columns + 1) != train_columns -> It cannot predict
         if test_data.shape[1] + 1 != self.data.shape[1]:
             print("The input dataset should have the same columns to use the tree for predictions")
@@ -216,3 +225,10 @@ class DecisionTree:
 
             print("Prediction process successful!")
             return predictions
+
+    def accuracy(self, d):
+        # Call the predict function
+        predictions = self.predict(d)
+        # Check for the rows where predictions are same as test labels
+        correct_results = d.iloc[:, -1] == predictions
+        return correct_results.mean()
