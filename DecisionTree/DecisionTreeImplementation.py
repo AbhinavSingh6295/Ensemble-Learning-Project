@@ -8,20 +8,21 @@ Created on Mon Feb 28 14:21:31 2022
 # Imports
 import numpy as np
 import pandas as pd
+import pydot
+from PIL import Image
+from io import BytesIO
 
 # Auxiliary functions
 # Preprocesses the data
-def preprocess_data(d, cat_cols = None):
+def preprocess_data(d, cat_cols=None):
     # If the data is a numpy_array, convert to pandas dataframe
     if type(d).__module__ == np.__name__:
         d = pd.DataFrame(data=d)
 
-    # TODO: would this be a good place to convert to dummies?
     # cat_cols = input list of categorical columns in data
-    if cat_cols != None:
+    if cat_cols is not None:
         d = pd.get_dummies(d, columns=cat_cols)
 
-    # TODO: also I was thinking on naming the columns standard way [0, 1, ..., n] - We can do that becuase we don't keep the names in the decision tree process anyways
     d.columns = range(d.shape[1])
 
     return d
@@ -63,8 +64,7 @@ def split(d, split_variable, split_value):
 
 
 # Finding all possible splits in data and choosing the one with the lowest entropy
-# TODO - Should we give the hyperparameter to choose if we want to use gini or entropy for impurity calculation.
-def best_split(d):
+def best_split(d, criterion):
     possible_splits = {}
     for column_index in range(d.shape[1] - 1):
         values = d.iloc[:, column_index]
@@ -82,12 +82,14 @@ def best_split(d):
         for spValue in possible_splits[spColumn]:
             # Split the data based on the value
             data_left, data_right = split(d, spColumn, spValue)
-            # TODO: when do we use entropy and when do we use gini? -
-            # TODO: They are more or less same, on internet it is mentioned that gini is
-            # TODO: less computationally expensive than entropy. So maybe we can use gini, but not sure.
+
             proportion_left = data_left.shape[0] / (data_left.shape[0] + data_right.shape[0])
             proportion_right = data_right.shape[0] / (data_left.shape[0] + data_right.shape[0])
-            ent = proportion_left * entropy(data_left) + proportion_right * entropy(data_right)
+
+            if criterion == 'entropy':
+                ent = proportion_left * entropy(data_left) + proportion_right * entropy(data_right)
+            else:
+                ent = proportion_left * gini_impurity(data_left) + proportion_right * gini_impurity(data_right)
 
             if ent <= min_entropy:
                 min_entropy = ent
@@ -99,16 +101,19 @@ def best_split(d):
 
 class DecisionTree:
 
-    def __init__(self, train_data, ml_task, max_depth=None, min_samples=None):
+    def __init__(self, train_data, ml_task, max_depth=None, min_samples=None, criterion='entropy'):
         self.data = preprocess_data(train_data)
         self.ml_task = ml_task
         self.max_depth = max_depth
         self.min_samples = min_samples
+        self.criterion = criterion
         self.tree = None
+        self.graph = None
+        self.list_node_names = []
 
     # This is the main function of the decision tree algorithm
     # Prerequisites: data is a pandas dataframe with
-    def decision_tree(self, d, ml_task, max_depth, min_samples, count=0):
+    def decision_tree(self, d, ml_task, max_depth, min_samples, criterion, count=0):
         # Check for max_depth condition
         if max_depth is None:
             depth_cond = True
@@ -141,7 +146,7 @@ class DecisionTree:
         else:
             count += 1
             # 1. Determine the best possible split
-            best_column, best_value = best_split(d)
+            best_column, best_value = best_split(d, criterion=criterion)
 
             # 2. Split the data
             data_left, data_right = split(d, best_column, best_value)
@@ -152,31 +157,38 @@ class DecisionTree:
 
             # 4. Recursively run the algorithm in the subtrees
             result_tree[condition].append(
-                self.decision_tree(data_left, ml_task, max_depth, min_samples, count=count))
+                self.decision_tree(data_left, ml_task, max_depth, min_samples, criterion, count=count))
             result_tree[condition].append(
-                self.decision_tree(data_right, ml_task, max_depth, min_samples, count=count))
+                self.decision_tree(data_right, ml_task, max_depth, min_samples, criterion, count=count))
             return result_tree
 
     # When this function is called the attribute tree is calculated with the
     # decision tree function
     def train(self):
-        self.tree = self.decision_tree(self.data, self.ml_task, self.max_depth, self.min_samples)
+        self.tree = self.decision_tree(self.data, self.ml_task, self.max_depth, self.min_samples, self.criterion)
         print("Training complete!")
         print("Resulting tree: ")
         print(self.tree)
+        # TODO: I think that we are almost done with this :) For now I can only think on
+        #  improving a bit the resulting trees... sometimes the left and right node both
+        #  predict the same labels... I am not sure whether including some pruning function
+        #  will help us to make the tree less complex when this happens.
 
-    # For prediction on one example
-    # I changed it a bit.... it takes as input the whole dataset
-    def predict(self, d):
-
+    # TODO: I added a parameter for this function. I imagine two cases
+    #  We want to predict validation data and have the labels -> val='validation'
+    #  so the data should have the same columns and we can compute the accuracy!
+    #  We want to predict new data that doesn't have the labels -> val='test'
+    #  so the data should have size - 1 and it cannot compute the accuracy!
+    #  Makes sense?
+    def predict(self, d, val='validation'):
         # It applies the same preprocessing steps for the prediction data
         test_data = preprocess_data(d)
 
-        # TODO - Don't know if we need this condition becuase the test data can contain the label column as well, which can helps in calculating the accuracy.
-        # If (test_columns + 1) != train_columns -> It cannot predict
-        if test_data.shape[1] + 1 != self.data.shape[1]:
-            print("The input dataset should have the same columns to use the tree for predictions")
+        if val == 'test' and test_data.shape[1] + 1 != self.data.shape[1]:
+            print("The input dataset should have the same columns to use the tree for predictions and no labels")
             return None
+        elif val == 'validation' and test_data.shape[1] != self.data.shape[1]:
+            print("The input dataset should have the same columns to use the tree for predictions and the labels")
         # If the tree is not trained yet
         elif self.tree is None:
             print("Use train function before predicting the data")
@@ -187,9 +199,7 @@ class DecisionTree:
             for index, row in test_data.iterrows():
                 reach_leaf = False
                 cut_tree = self.tree
-                # TODO: this set of prints are used for understanding
-                # TODO: how it is doing the prediction, we could comment them out
-                print("values: ", row.values)
+                # print("values: ", row.values)
 
                 # Evaluates iteratively the tree
                 # If it finds another condition it keeps iterating i.e. going to lower
@@ -197,8 +207,8 @@ class DecisionTree:
                 # When it finds a leaf, it adds the value to predictions
                 # and stops iterating.
                 while not reach_leaf:
-                    print("starts iter")
-                    print(cut_tree)
+                    # print("starts iter")
+                    # print(cut_tree)
 
                     condition = list(cut_tree.keys())[0]  # Node with condition for split
                     feature_index, operator, value = condition.split(" ")
@@ -207,28 +217,77 @@ class DecisionTree:
                     if row[int(column_name)] <= float(value):
                         # Goes to left node
                         if isinstance(cut_tree[condition][0], dict):
-                            print("left sub-tree")
+                            # print("left sub-tree")
                             cut_tree = cut_tree.get(list(cut_tree.keys())[0])[0]
                         else:
-                            print("left leaf")
+                            # print("left leaf")
                             predictions.append(cut_tree[condition][0])
                             reach_leaf = True
                     else:
                         # Goes to right node
                         if isinstance(cut_tree[condition][1], dict):
-                            print("right sub-tree")
+                            # print("right sub-tree")
                             cut_tree = cut_tree.get(list(cut_tree.keys())[0])[1]
                         else:
-                            print("right leaf")
+                            # print("right leaf")
                             predictions.append(cut_tree[condition][1])
                             reach_leaf = True
 
-            print("Prediction process successful!")
+            # print("Prediction process successful!")
             return predictions
 
     def accuracy(self, d):
         # Call the predict function
-        predictions = self.predict(d)
-        # Check for the rows where predictions are same as test labels
-        correct_results = d.iloc[:, -1] == predictions
-        return correct_results.mean()
+        predictions = self.predict(d, val="validation")
+
+        if predictions is None:
+            return None
+        else:
+            correct_results = d[:, -1] == predictions
+            return correct_results.mean()
+
+    def draw(self, parent_name, child_name):
+
+        elem_exists = True
+        while elem_exists:
+            if child_name in self.list_node_names:
+                child_name = child_name + " "
+            else:
+                elem_exists = False
+
+        self.list_node_names.append(child_name)
+
+        edge = pydot.Edge(parent_name, child_name)
+        self.graph.add_edge(edge)
+
+    def visit(self, node, parent=None):
+
+        if isinstance(node, np.floating):
+            self.draw(parent, str(node))
+        else:
+            for k, v in node.items():
+                if isinstance(v, list):
+                    if parent:
+                        self.draw(parent, k)
+                    self.visit(v[0], k)
+                    self.visit(v[1], k)
+                else:
+                    self.draw(parent, k)
+                    self.draw(k, k + '_' + v)
+
+    def draw_tree(self):
+        try:
+            self.graph = pydot.Dot(graph_type='graph')
+            self.visit(self.tree)
+            Image.open(BytesIO(self.graph.create_png())).show()
+        except Exception as e:
+            print("Consider installing graphviz in your project environment")
+            print("And adding to the path the Dot.exe route to be able to see the graph.")
+            print("Original trace of the error:")
+            print(e)
+
+
+
+
+
+
