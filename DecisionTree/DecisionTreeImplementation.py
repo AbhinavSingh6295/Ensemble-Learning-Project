@@ -12,6 +12,7 @@ import pydot
 from PIL import Image
 from io import BytesIO
 
+
 # Auxiliary functions
 # Preprocesses the data
 def preprocess_data(d, cat_cols=None):
@@ -285,9 +286,3 @@ class DecisionTree:
             print("And adding to the path the Dot.exe route to be able to see the graph.")
             print("Original trace of the error:")
             print(e)
-
-
-
-
-
-
