@@ -5,7 +5,6 @@ Created on Mon Feb 28 14:21:31 2022
 @author: Abhinav Singh & Daniel Roca
 """
 from sklearn.datasets import make_moons
-import pandas as pd
 import numpy as np
 from DecisionTreeImplementation import DecisionTree
 
@@ -33,8 +32,7 @@ data = np.append(X, y, axis=1)
 # y = X**2 + np.random.normal(0, 0.07, N)
 # data = np.array((X, y)).T
 
-dt = DecisionTree(data, "classification", max_depth=3)
-# dt = DecisionTree(data, "regression", max_depth=3)
+dt = DecisionTree(data, task, max_depth=3)
 
 # Train the decision tree with cross-entropy method
 dt.train()
@@ -42,6 +40,14 @@ dt.train()
 # After this, the dt has the trained tree. Now we can make predictions with data that
 # has the same structure
 
-data_predict = np.array([[2, 2], [0, 0]])
-predictions = dt.predict(data_predict)
+data_predict = np.array([[2, 2, 1], [0, 0, 0]])
+predictions = dt.predict(data_predict, val='validation')
 print(predictions)
+acc = dt.accuracy(data_predict)
+print(acc)
+
+
+# Draw the resulting tree
+dt.draw_tree()
+
+
