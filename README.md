@@ -52,6 +52,9 @@ task = "classification"
   # Draw the resulting tree
   dt.draw_tree()
   ````
+  
+  ![](DecisionTree/tree_sample.PNG)
+  
 
 
 
