@@ -24,9 +24,9 @@ X, y = make_moons(N, noise=0.2)
 y = np.reshape(y, (N, 1))
 data = np.append(X, y, axis=1)
 
-train_data = data[:1000,:]
-val_data = data[1000:1500,:]
-test_data = data[1500:,:]
+train_data = data[:1000, :]
+val_data = data[1000:1500, :]
+test_data = data[1500:, :]
 # -------------------------------------
 # Regression Test Data
 # -------------------------------------
@@ -51,7 +51,7 @@ print(acc)
 
 # Check after pruning
 print("Results after pruning")
-dt.post_pruning(tree = None, train_data=train_data, val_data=val_data, ml_task=task)
+dt.post_pruning(tree=None, train_data=train_data, val_data=val_data, ml_task=task)
 dt.print()
 data_predict = test_data
 predictions = dt.predict(data_predict, val='validation')
