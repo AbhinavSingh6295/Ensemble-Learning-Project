@@ -170,17 +170,7 @@ class DecisionTree:
         print("Training complete!")
         print("Resulting tree: ")
         print(self.tree)
-        # TODO: I think that we are almost done with this :) For now I can only think on
-        #  improving a bit the resulting trees... sometimes the left and right node both
-        #  predict the same labels... I am not sure whether including some pruning function
-        #  will help us to make the tree less complex when this happens.
 
-    # TODO: I added a parameter for this function. I imagine two cases
-    #  We want to predict validation data and have the labels -> val='validation'
-    #  so the data should have the same columns and we can compute the accuracy!
-    #  We want to predict new data that doesn't have the labels -> val='test'
-    #  so the data should have size - 1 and it cannot compute the accuracy!
-    #  Makes sense?
     def predict(self, d, val='validation'):
         # It applies the same preprocessing steps for the prediction data
         test_data = preprocess_data(d)
@@ -247,9 +237,6 @@ class DecisionTree:
             correct_results = d[:, -1] == predictions
             return correct_results.mean()
 
-    # Daniel, this is little tricky to understand for me. Below implementation is more or less similar to the github code.
-    # At the moment, this is not giving the improved accuracy after pruning on the dataset that we are using.
-    # Let me know if this is correct and we should use it, I will try to make further changes to make a little different from github.
     def post_pruning(self, tree, train_data, val_data, ml_task):
 
         if tree == None:
@@ -263,7 +250,7 @@ class DecisionTree:
         question = list(tree.keys())[0]
         left_tree, right_tree = tree[question]
 
-        # Base case - when both 'yes' and 'no' answer is leaf
+        # Base case - when both left and right answer is leaf
         if not isinstance(left_tree, dict) and not isinstance(right_tree, dict):
 
             # Prediction on val_data using original tree
@@ -310,7 +297,7 @@ class DecisionTree:
 
             return tree
 
-
+    # Auxiliary function for drawing recursively the tree
     def draw(self, parent_name, child_name):
 
         elem_exists = True
@@ -325,6 +312,7 @@ class DecisionTree:
         edge = pydot.Edge(parent_name, child_name)
         self.graph.add_edge(edge)
 
+    # Auxiliary function for drawing recursively the tree
     def visit(self, node, parent=None):
 
         if isinstance(node, np.floating):
