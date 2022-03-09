@@ -247,6 +247,70 @@ class DecisionTree:
             correct_results = d[:, -1] == predictions
             return correct_results.mean()
 
+    # Daniel, this is little tricky to understand for me. Below implementation is more or less similar to the github code.
+    # At the moment, this is not giving the improved accuracy after pruning on the dataset that we are using.
+    # Let me know if this is correct and we should use it, I will try to make further changes to make a little different from github.
+    def post_pruning(self, tree, train_data, val_data, ml_task):
+
+        if tree == None:
+            tree = self.tree
+
+        # Pre-process train and val data
+        train_data = preprocess_data(train_data)
+        val_data = preprocess_data(val_data)
+
+        # First node in the input tree
+        question = list(tree.keys())[0]
+        left_tree, right_tree = tree[question]
+
+        # Base case - when both 'yes' and 'no' answer is leaf
+        if not isinstance(left_tree, dict) and not isinstance(right_tree, dict):
+
+            # Prediction on val_data using original tree
+            predictions = self.predict(val_data, val='validation')
+
+            if ml_task.lower() == "classification":
+                # Output, if there was no split
+                leaf = train_data.iloc[:, -1].value_counts().index[0]
+                # Error using the above output i.e, without split
+                errors_leaf = sum(leaf != val_data.iloc[:, -1])
+                # Error with existing split
+                errors_decision_node = sum(predictions != val_data.iloc[:, -1])
+
+            else:  # regression
+                leaf = train_data.iloc[:, -1].mean()
+                errors_leaf = ((leaf - val_data.iloc[:, -1]) ** 2).mean()
+                errors_decision_node = ((predictions - val_data.iloc[:, -1]) ** 2).mean()
+
+            if errors_leaf <= errors_decision_node:
+                return leaf
+            else:
+                self.tree = tree  # replace the original tree with updated tree
+                return tree
+
+        else:  # When either of the answer are dictionary
+
+            feature_idx, comparison, value = question.split()
+            feature = feature_idx.split("*")[1]
+
+            # train and validation datasets for the splits
+            train_data_yes, train_data_no = train_data[train_data[int(feature)] <= float(value)], train_data[train_data[int(feature)] > float(value)]
+            val_data_yes, val_data_no = val_data[val_data[int(feature)] <= float(value)], val_data[val_data[int(feature)] > float(value)]
+
+            # Recursively calling the function
+            if isinstance(left_tree, dict):
+                left_tree = self.post_pruning(left_tree, train_data_yes, val_data_yes, ml_task)
+
+            if isinstance(right_tree, dict):
+                right_tree = self.post_pruning(right_tree, train_data_no, val_data_no, ml_task)
+
+            tree = {question: [left_tree, right_tree]}
+
+            self.tree = tree
+
+            return tree
+
+
     def draw(self, parent_name, child_name):
 
         elem_exists = True
@@ -286,3 +350,6 @@ class DecisionTree:
             print("And adding to the path the Dot.exe route to be able to see the graph.")
             print("Original trace of the error:")
             print(e)
+
+    def print(self):
+        return print(self.tree)
