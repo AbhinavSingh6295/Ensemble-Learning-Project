@@ -1,6 +1,11 @@
 # Ensemble-Learning-Project
 
-1. Decision Tree Implementation from scratch - Daniel Roca and Abhinav Singh
+## Contributions - 
+####  Decision Tree Implementation - Daniel Roca & Abhinav Singh
+
+####  Cyberbullying on Twitter - Abhimanyu Soni, Kavya Shirke & Ruy Roa
+
+## 1. Decision Tree Implementation from scratch
 
 Edit the input data in the main.py file and run the decision tree implementation.
 
