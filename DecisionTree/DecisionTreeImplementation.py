@@ -227,15 +227,20 @@ class DecisionTree:
             # print("Prediction process successful!")
             return predictions
 
-    def accuracy(self, d):
+    def evaluation(self, d):
         # Call the predict function
         predictions = self.predict(d, val="validation")
 
         if predictions is None:
             return None
         else:
-            correct_results = d[:, -1] == predictions
-            return correct_results.mean()
+            if self.ml_task == 'classification':
+                correct_results = d[:, -1] == predictions
+                accuracy = correct_results.mean()
+                return 'Accuracy: {}'.format(accuracy)
+            else:
+                rmse = (((predictions - d[:, -1])**2).mean())**0.5
+                return 'RMSE: {}'.format(rmse)
 
     def post_pruning(self, tree, train_data, val_data, ml_task):
 
@@ -297,7 +302,7 @@ class DecisionTree:
 
             return tree
 
-    # Auxiliary function for drawing recursively the tree
+    Auxiliary function for drawing recursively the tree
     def draw(self, parent_name, child_name):
 
         elem_exists = True

@@ -9,8 +9,8 @@ import numpy as np
 from DecisionTreeImplementation import DecisionTree
 
 # Choose the task of the tree (either classification or regression)
-task = "classification"
-# task = "regression"
+# task = "classification"
+task = "regression"
 
 # Choose the data, in this we can use either numpy array or pandas dataframe
 # The decision tree takes the last column of the pandas dataframe as the label
@@ -19,21 +19,22 @@ task = "classification"
 # ------------------------------------
 # Classification Test Data
 # -------------------------------------
+# N = 2000
+# X, y = make_moons(N, noise=0.2)
+# y = np.reshape(y, (N, 1))
+# data = np.append(X, y, axis=1)
+
+# -------------------------------------
+# Regression Test Data
+# -------------------------------------
 N = 2000
-X, y = make_moons(N, noise=0.2)
-y = np.reshape(y, (N, 1))
-data = np.append(X, y, axis=1)
+X = np.linspace(-1, 1, N)
+y = X**2 + np.random.normal(0, 0.07, N)
+data = np.array((X, y)).T
 
 train_data = data[:1000, :]
 val_data = data[1000:1500, :]
 test_data = data[1500:, :]
-# -------------------------------------
-# Regression Test Data
-# -------------------------------------
-# N = 200
-# X = np.linspace(-1, 1, N)
-# y = X**2 + np.random.normal(0, 0.07, N)
-# data = np.array((X, y)).T
 
 dt = DecisionTree(train_data, task, max_depth=3)
 
@@ -46,7 +47,7 @@ dt.train()
 data_predict = test_data
 predictions = dt.predict(data_predict, val='validation')
 #print(predictions)
-acc = dt.accuracy(data_predict)
+acc = dt.evaluation(data_predict)
 print(acc)
 
 # Check after pruning
@@ -56,11 +57,11 @@ dt.print()
 data_predict = test_data
 predictions = dt.predict(data_predict, val='validation')
 #print(predictions)
-acc = dt.accuracy(data_predict)
+acc = dt.evaluation(data_predict)
 print(acc)
 
 
 # Draw the resulting tree
-# dt.draw_tree()
+dt.draw_tree()
 
 
