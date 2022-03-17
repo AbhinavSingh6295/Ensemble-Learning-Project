@@ -302,7 +302,7 @@ class DecisionTree:
 
             return tree
 
-    Auxiliary function for drawing recursively the tree
+    # Auxiliary function for drawing recursively the tree
     def draw(self, parent_name, child_name):
 
         elem_exists = True
