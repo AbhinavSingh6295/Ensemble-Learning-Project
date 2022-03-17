@@ -42,7 +42,7 @@ task = "classification"
 
   - The decision tree can be used for calculating the accuracy/rmse on a validation set
     ````
-    acc = dt.evaluations(data_predict)
+    acc = dt.evaluation(data_predict)
     print(acc)
     ````
 
