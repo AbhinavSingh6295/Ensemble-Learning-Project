@@ -40,9 +40,9 @@ task = "classification"
   dt.train()
   ````
 
-  - The decision tree can be used for calculating the accuracy on a validation set
+  - The decision tree can be used for calculating the accuracy/rmse on a validation set
     ````
-    acc = dt.accuracy(data_predict)
+    acc = dt.evaluations(data_predict)
     print(acc)
     ````
 
